@@ -1,0 +1,18 @@
+{
+    "reports": [
+        {
+            "reportId": "bd56fa8f-e9b4-490f-b2bf-53012e5a55b3",
+            "workspaceId": "b6e49b57-6534-4373-a91c-e452e5dd1859",
+            "filtersScramble": true,
+            "sleepSeconds": 3,
+            "instances": 5
+        }
+        ,
+        {
+            "reportId": "83b4e4ab-5f17-430c-a0f1-8f791cb14fad",
+            "workspaceId": "9f19cb45-1182-4656-82b0-e7a049985835",            
+            "sleepSeconds": 3,
+            "instances": 3
+        }
+    ]
+}

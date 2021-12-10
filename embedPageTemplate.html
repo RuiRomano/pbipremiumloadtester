@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <style>
+        body {
+
+            font-family: 'Segoe UI';
+
+        }
+    </style>
+
+    <meta charset="utf-8" />
+
+    <title></title>
+
+    <!--JS libraries-->
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/gh/Microsoft/PowerBI-JavaScript@master/dist/powerbi.min.js"
+        type="text/javascript"></script>
+
+</head>
+
+<body>
+
+    <hr style="width:99%;" />
+
+    <div id="loadReportCounter">0</div>
+
+    <div id="embedContainer" style="height: 800px; width: 100%; "></div>
+
+</body>
+
+
+<script>
+
+    var EMBED_ACCESS_TOKEN = "[ACCESSTOKEN]";
+    var REPORT_ID = "[REPORTID]";
+    var WORKSPACE_ID = "[WORKSPACEID]";
+    var EMBED_URL = "https://app.powerbi.com/reportEmbed?reportId=" + REPORT_ID + "&groupId=" + WORKSPACE_ID;
+    var TOKEN_TYPE = 0;
+    var FILTERS_SCRAMBLE = [FILTERS_SCRAMBLE];
+    var SLEEP_SECONDS = [SLEEP_SECONDS];
+
+    self.startTime = new Date();
+
+    self.loadCounter = sessionStorage.getItem('reloadCounter') === null ? 0 : sessionStorage.getItem('reloadCounter');
+
+    self.startTime = (sessionStorage.getItem('originalStartTime') === null ? self.startTime : new Date(sessionStorage.getItem('originalStartTime')));
+
+
+    async function main() {
+        try {
+            let loadedResolve, reportLoaded = new Promise((res, rej) => { loadedResolve = res; });
+            let renderedResolve, reportRendered = new Promise((res, rej) => { renderedResolve = res; });
+
+            // Get models. models contains enums that can be used.
+            models = window['powerbi-client'].models;
+
+            // Embed a Power BI report in the given HTML element with the given configurations
+            // Read more about how to embed a Power BI report in your application here: https://go.microsoft.com/fwlink/?linkid=2153590
+            function embedPowerBIReport() {
+
+                // Read embed application token
+                let accessToken = EMBED_ACCESS_TOKEN;
+
+                // Read embed URL
+                let embedUrl = EMBED_URL;
+
+                // Read report Id
+                let embedReportId = REPORT_ID;
+
+                // Read embed type from radio
+                let tokenType = TOKEN_TYPE;
+
+                // We give All permissions to demonstrate switching between View and Edit mode and saving report.
+                let permissions = models.Permissions.All;
+
+                // Create the embed configuration object for the report
+                // For more information see https://go.microsoft.com/fwlink/?linkid=2153590
+                let config = {
+                    type: 'report',
+                    tokenType: tokenType == '0' ? models.TokenType.Aad : models.TokenType.Embed,
+                    accessToken: accessToken,
+                    embedUrl: embedUrl,
+                    id: embedReportId,
+                    permissions: permissions,
+                    settings: {
+                        panes: {
+                            filters: {
+                                visible: true
+                            },
+                            pageNavigation: {
+                                visible: true
+                            }
+                        }
+                    }
+                };
+
+                // Get a reference to the embedded report HTML element
+                let embedContainer = $('#embedContainer')[0];
+
+                // Embed the report and display it within the div container.
+                self.report = powerbi.embed(embedContainer, config);
+
+                // report.off removes all event handlers for a specific event
+                report.off("loaded");
+
+                // report.on will add an event handler
+                report.on("loaded", function () {
+                    loadedResolve();
+                    report.off("loaded");
+                });
+
+                // report.off removes all event handlers for a specific event
+                report.off("error");
+
+                report.on("error", function (event) {
+                    console.log(event.detail);
+                });
+
+                // report.off removes all event handlers for a specific event
+                report.off("rendered");
+
+                // report.on will add an event handler
+                report.on("rendered", function () {
+                    renderedResolve();
+
+                    self.addCounter();        
+
+                    report.off("rendered");
+                });
+            }
+
+            embedPowerBIReport();
+
+            await reportLoaded;
+
+            // Insert here the code you want to run after the report is loaded
+
+            await reportRendered;
+
+            // IF true look for report level filter with values to loop around
+
+            if (FILTERS_SCRAMBLE) {
+                self.pages = await report.getPages();
+
+                // Retrieve the page that contain the filters. For the sample report it will be the active page
+                self.activePage = pages.filter(function (page) {
+                    return page.isActive
+                })[0];
+
+                var filters = await self.activePage.getFilters();
+
+                self.pageFilters = filters;
+
+                setTimeout("scramblePageFilters()", SLEEP_SECONDS * 1000)
+
+            }
+            else {
+                setTimeout("reportRefresh()", SLEEP_SECONDS * 1000)
+            }
+        }
+        catch (errors) {
+            console.log(errors);
+        }
+    }
+
+    function addCounter() {
+        if (self.loadCounter > 0) {
+            var divCounter = $('#loadReportCounter')
+
+            var avgDuration = Math.round(((((new Date()) - self.startTime) - (SLEEP_SECONDS * loadCounter * 1000)) / loadCounter)) / 1000;
+
+            divCounter.html(loadCounter + " refreshes | " + avgDuration + " seconds average refresh time | " + SLEEP_SECONDS + " seconds sleep");
+        }
+
+        self.loadCounter++;
+    }
+
+    async function reportRefresh() {
+        try {
+
+            await main();
+        }
+        catch (errors) {
+            console.log(errors);
+        }
+
+    }
+
+    async function scramblePageFilters() {
+
+        try {
+
+            console.log("Setting filters");
+
+            var filtersIntance = Array(0)
+
+            pageFilters.forEach(elementOriginal => {
+
+                var element = Object.assign({}, elementOriginal);
+
+                if (element.operator == "In" && element.values.length > 0) {
+                    element.values = [element.values[Math.floor(Math.random() * element.values.length)]];
+                }
+
+                filtersIntance.push(element);
+            });
+
+            await self.activePage.updateFilters(models.FiltersOperations.ReplaceAll, filtersIntance);
+
+            addCounter();
+
+            console.log("All the page filters were replaced.");
+
+            setTimeout("scramblePageFilters()", SLEEP_SECONDS * 1000);
+        }
+        catch (errors) {
+            console.log(errors);
+        }
+
+    }
+
+    main();
+
+</script>
+
+</html>

@@ -36,8 +36,9 @@
 </body>
 
 
-<script>
+<script>    
 
+    // <Tokens>
     var EMBED_ACCESS_TOKEN = "[ACCESSTOKEN]";
     var REPORT_ID = "[REPORTID]";
     var WORKSPACE_ID = "[WORKSPACEID]";
@@ -45,16 +46,17 @@
     var TOKEN_TYPE = 0;
     var FILTERS_SCRAMBLE = [FILTERS_SCRAMBLE];
     var SLEEP_SECONDS = [SLEEP_SECONDS];
+    var LOOP_PAGES = [LOOP_PAGES];
+    var PAGE_NAME = [PAGE_NAME];
+    // </Tokens>
 
-    self.startTime = new Date();
-
-    self.loadCounter = sessionStorage.getItem('reloadCounter') === null ? 0 : sessionStorage.getItem('reloadCounter');
-
-    self.startTime = (sessionStorage.getItem('originalStartTime') === null ? self.startTime : new Date(sessionStorage.getItem('originalStartTime')));
-
+    self.loadCounter = 0;
+    self.pageIndex = 0;
 
     async function main() {
         try {
+            self.startTime = new Date();
+
             let loadedResolve, reportLoaded = new Promise((res, rej) => { loadedResolve = res; });
             let renderedResolve, reportRendered = new Promise((res, rej) => { renderedResolve = res; });
 
@@ -79,6 +81,22 @@
 
                 // We give All permissions to demonstrate switching between View and Edit mode and saving report.
                 let permissions = models.Permissions.All;
+                                
+                var defaultPageName = PAGE_NAME;
+
+                if (LOOP_PAGES && self.pages)
+                {
+                    pageIndex++;
+
+                    if (pageIndex >= self.pages.length)
+                    {
+                        pageIndex = 0;                        
+                    }
+
+                    var nextPage = self.pages[pageIndex];             
+                    
+                    defaultPageName = nextPage.name;                                    
+                }
 
                 // Create the embed configuration object for the report
                 // For more information see https://go.microsoft.com/fwlink/?linkid=2153590
@@ -89,6 +107,7 @@
                     embedUrl: embedUrl,
                     id: embedReportId,
                     permissions: permissions,
+                    pageName: defaultPageName,
                     settings: {
                         panes: {
                             filters: {
@@ -130,7 +149,7 @@
                 report.on("rendered", function () {
                     renderedResolve();
 
-                    self.addCounter();        
+                    self.addCounter();
 
                     report.off("rendered");
                 });
@@ -144,10 +163,14 @@
 
             await reportRendered;
 
-            // IF true look for report level filter with values to loop around
+            if (!self.pages) {
+
+                // IF true look for report level filter with values to loop around
+                console.log("getting pages");
+                self.pages = await report.getPages();
+            }
 
             if (FILTERS_SCRAMBLE) {
-                self.pages = await report.getPages();
 
                 // Retrieve the page that contain the filters. For the sample report it will be the active page
                 self.activePage = pages.filter(function (page) {
@@ -162,6 +185,7 @@
 
             }
             else {
+
                 setTimeout("reportRefresh()", SLEEP_SECONDS * 1000)
             }
         }
@@ -174,9 +198,9 @@
         if (self.loadCounter > 0) {
             var divCounter = $('#loadReportCounter')
 
-            var avgDuration = Math.round(((((new Date()) - self.startTime) - (SLEEP_SECONDS * loadCounter * 1000)) / loadCounter)) / 1000;
+            var avgDuration = Math.round(new Date() - self.startTime) / 1000;
 
-            divCounter.html(loadCounter + " refreshes | " + avgDuration + " seconds average refresh time | " + SLEEP_SECONDS + " seconds sleep");
+            divCounter.html(loadCounter + " refreshes | " + avgDuration + " seconds refresh time | " + SLEEP_SECONDS + " seconds sleep");
         }
 
         self.loadCounter++;
@@ -186,10 +210,15 @@
         try {
 
             await main();
+
         }
         catch (errors) {
             console.log(errors);
         }
+
+    }
+
+    async function switchPage() {
 
     }
 

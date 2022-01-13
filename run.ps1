@@ -14,6 +14,8 @@ $ErrorActionPreference = "Stop"
 
 $currentPath = (Split-Path $MyInvocation.MyCommand.Definition -Parent)
 
+Set-Location $currentPath
+
 Write-Host "Current Path: $currentPath"
 
 Write-Host "Config Path: $configFilePath"
@@ -46,10 +48,18 @@ $accessToken = $accessToken.Replace("Bearer ","").Trim()
 Write-Host "Preparing HTML files on '$outputPath'"
 
 foreach($report in $config.Reports)
-{
+{    
     $filtersScramble = if($report.filtersScramble) {1} else {0}
 
-    $reportHtml = $htmlTemplate.Replace("[ACCESSTOKEN]","$accessToken").Replace("[REPORTID]",$report.reportId).Replace("[WORKSPACEID]",$report.workspaceId).Replace("[FILTERS_SCRAMBLE]", $filtersScramble.ToString()).Replace("[SLEEP_SECONDS]",$report.sleepSeconds)
+    $loopPages = if($report.loopPages) {1} else {0}
+
+    $pageName = if($report.pageName) {$report.pageName} else {"null"}
+
+    $reportHtml = $htmlTemplate
+    
+    $reportHtml = $reportHtml.Replace("[ACCESSTOKEN]","$accessToken").Replace("[REPORTID]",$report.reportId).Replace("[WORKSPACEID]",$report.workspaceId)
+    $reportHtml = $reportHtml.Replace("[FILTERS_SCRAMBLE]", $filtersScramble.ToString()).Replace("[SLEEP_SECONDS]",$report.sleepSeconds)
+    $reportHtml = $reportHtml.Replace("[LOOP_PAGES]",$loopPages).Replace("[PAGE_NAME]",$pageName)
 
     $reportHtml | Out-File "$outputPath\$($report.reportId).html"
 

@@ -1,20 +1,10 @@
 {
     "reports": [
-
-        {
-            "reportId": "bd56fa8f-e9b4-490f-b2bf-53012e5a55b3",
-            "workspaceId": "b6e49b57-6534-4373-a91c-e452e5dd1859",  
-            "sleepSeconds": 5,
-            "instances": 2,
-            "loopPages": true,
-            "pageName": null            
-        }    
-        ,
         {
             "reportId": "83b4e4ab-5f17-430c-a0f1-8f791cb14fad",
             "workspaceId": "9f19cb45-1182-4656-82b0-e7a049985835",            
             "sleepSeconds": 5,
-            "instances": 2,
+            "instances": 1,
             "loopPages": true,
             "pageName": null 
         }
@@ -23,9 +13,16 @@
             "reportId": "a586e852-aef5-41a4-8f5d-0c54b4db4f17",
             "workspaceId": "87a03750-ef35-4074-be37-028c175d0714",            
             "sleepSeconds": 5,
-            "instances": 2,
+            "instances": 1,
             "loopPages": true,
             "pageName": null 
+        }    
+        ,
+        {
+            "reportId": "041eca9c-f5ad-465f-8153-dc257d56c485",
+            "workspaceId": "cdee92d2-3ff9-43e2-9f71-0916e888ad27",            
+            "sleepSeconds": 30,
+            "instances": 1                       
         }    
     ]
 }

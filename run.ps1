@@ -5,9 +5,7 @@ param(
     ,
     [string]$outputPath = ".\output"
     ,
-    [string]$embedHtmlFilePath = ".\embedPageTemplate.html"
-    ,
-    [bool]$launchBrowsers = $true
+    [bool]$launchBrowsers = $false
 )
 
 $ErrorActionPreference = "Stop"
@@ -29,11 +27,12 @@ else {
 
 # Ensure output folders
 
+Remove-Item $outputPath -Recurse -Force -ErrorAction SilentlyContinue
+
 @($outputPath) |% {
     New-Item -ItemType Directory -Path $_ -ErrorAction SilentlyContinue | Out-Null
 }
 
-$htmlTemplate = Get-Content $embedHtmlFilePath
 
 try {
     $accessToken = Get-PowerBIAccessToken -AsString
@@ -55,11 +54,31 @@ foreach($report in $config.Reports)
 
     $pageName = if($report.pageName) {$report.pageName} else {"null"}
 
+    $reportInfo = Get-PowerBIReport -WorkspaceId $report.workspaceId -ReportId $report.reportId
+    
+    if (!$reportInfo)
+    {
+        throw "Cannot find report '$($report.reportId)'"
+    }
+
+    if ($reportInfo.EmbedUrl.Contains("rdlEmbed"))
+    {
+        $embedHtmlFilePath = ".\embedPageTemplate.paginated.html"
+    }
+    else
+    {
+        $embedHtmlFilePath = ".\embedPageTemplate.html"
+    }
+
+    $htmlTemplate = Get-Content $embedHtmlFilePath
+
     $reportHtml = $htmlTemplate
     
     $reportHtml = $reportHtml.Replace("[ACCESSTOKEN]","$accessToken").Replace("[REPORTID]",$report.reportId).Replace("[WORKSPACEID]",$report.workspaceId)
+    $reportHtml = $reportHtml.Replace("[EMBEDURL]",$reportInfo.EmbedUrl);
     $reportHtml = $reportHtml.Replace("[FILTERS_SCRAMBLE]", $filtersScramble.ToString()).Replace("[SLEEP_SECONDS]",$report.sleepSeconds)
     $reportHtml = $reportHtml.Replace("[LOOP_PAGES]",$loopPages).Replace("[PAGE_NAME]",$pageName)
+    
 
     $reportHtml | Out-File "$outputPath\$($report.reportId).html"
 

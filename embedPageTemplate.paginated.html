@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <style>
+        body {
+
+            font-family: 'Segoe UI';
+
+        }
+    </style>
+
+    <meta charset="utf-8" />
+
+    <title></title>
+
+    <!--JS libraries-->
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/gh/Microsoft/PowerBI-JavaScript@master/dist/powerbi.min.js"
+        type="text/javascript"></script>
+
+</head>
+
+<body>
+
+    <hr style="width:99%;" />
+
+    <div id="loadReportCounter">0</div>
+
+    <div id="embedContainer" style="height: 800px; width: 100%; "></div>
+
+</body>
+
+
+<script>    
+
+    // <Tokens>
+    var EMBED_ACCESS_TOKEN = "[ACCESSTOKEN]";
+    var REPORT_ID = "[REPORTID]";
+    var WORKSPACE_ID = "[WORKSPACEID]";
+    var EMBED_URL = "[EMBEDURL]";
+    var TOKEN_TYPE = 0;
+    var SLEEP_SECONDS = [SLEEP_SECONDS];
+
+    // </Tokens>
+
+    self.loadCounter = 0;
+    self.pageIndex = 0;
+
+    async function main() {
+        try {
+            self.startTime = new Date();
+
+            let loadedResolve, reportLoaded = new Promise((res, rej) => { loadedResolve = res; });
+            let renderedResolve, reportRendered = new Promise((res, rej) => { renderedResolve = res; });
+
+            // Get models. models contains enums that can be used.
+            models = window['powerbi-client'].models;
+
+            // Embed a Power BI report in the given HTML element with the given configurations
+            // Read more about how to embed a Power BI report in your application here: https://go.microsoft.com/fwlink/?linkid=2153590
+            function embedPowerBIReport() {
+
+                // Read embed application token
+                let accessToken = EMBED_ACCESS_TOKEN;
+
+                // Read embed URL
+                let embedUrl = EMBED_URL;
+
+                // Read report Id
+                let embedReportId = REPORT_ID;
+
+                // Read embed type from radio
+                let tokenType = TOKEN_TYPE;
+
+                // We give All permissions to demonstrate switching between View and Edit mode and saving report.
+                let permissions = models.Permissions.All;
+                            
+
+                // Create the embed configuration object for the report
+                // For more information see https://go.microsoft.com/fwlink/?linkid=2153590
+                let config = {
+                    type: 'report',
+                    tokenType: tokenType == '0' ? models.TokenType.Aad : models.TokenType.Embed,
+                    accessToken: accessToken,
+                    embedUrl: embedUrl,
+                    id: embedReportId,
+                    uniqueId: embedReportId,
+                    permissions: permissions,                    
+                    settings: {
+                        commands: {
+                            parameterPanel: {
+                                enabled: true,
+                                expanded: true
+                            }
+                        }
+                    }
+                };
+
+                // Get a reference to the embedded report HTML element
+                let embedContainer = $('#embedContainer')[0];
+
+                powerbi.reset(embedContainer);
+                
+                // Embed the report and display it within the div container.
+                self.report = powerbi.embed(embedContainer, config);
+              
+            }
+
+            embedPowerBIReport();
+
+            setTimeout("reportRefresh()", SLEEP_SECONDS * 1000)
+        
+        }
+        catch (errors) {
+            console.log(errors);
+        }
+    }
+
+    async function reportRefresh() {
+        try {
+
+            await main();
+
+        }
+        catch (errors) {
+            console.log(errors);
+        }
+
+    }
+
+    main();
+
+</script>
+
+</html>
